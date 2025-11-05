@@ -1,169 +1,179 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login Verifikasi - Zhar Hosting</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ZharVerify - Login OTP</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
+  :root {
+    --gold1: #ffd700;
+    --gold2: #b8860b;
+    --bg: #000;
+    --card: rgba(255, 215, 0, 0.06);
+  }
+  * {box-sizing: border-box; font-family: Poppins, system-ui, sans-serif;}
   body {
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #000000, #2b1b08, #3b290d);
-    color: gold;
-    height: 100vh;
-    overflow: hidden;
+    margin: 0; display: flex; justify-content: center; align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #000000 0%, #1a1200 50%, #4b3600 100%);
+    color: #fff;
   }
-
-  .container {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    text-align: center;
-    animation: fadeIn 0.6s ease;
+  .wrap {
+    width: 90%; max-width: 420px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 16px;
+    box-shadow: 0 0 25px rgba(184,134,11,0.1);
+    padding: 25px;
   }
-
-  .active {
-    display: flex;
-  }
-
+  h1 {color: var(--gold1); display: flex; gap: 10px; align-items: center; font-size: 22px;}
+  p {font-size: 14px; color: rgba(255,255,255,0.8);}
   input {
-    padding: 12px;
-    border: 1px solid gold;
-    border-radius: 10px;
-    background: rgba(255, 215, 0, 0.05);
-    color: gold;
-    font-size: 16px;
-    width: 80%;
-    max-width: 300px;
-    outline: none;
-    text-align: center;
-    margin-top: 10px;
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: rgba(255,255,255,0.06); color: #fff; font-size: 15px;
+    margin-top: 10px; outline: none;
   }
-
   button {
-    background: linear-gradient(135deg, gold, #d4af37);
-    color: black;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 20px;
-    transition: all 0.3s ease;
+    width: 100%; padding: 12px; border-radius: 10px;
+    border: none; margin-top: 12px; cursor: pointer;
+    background: linear-gradient(90deg, var(--gold1), var(--gold2));
+    color: #000; font-weight: bold; font-size: 15px;
   }
-
-  button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px gold;
+  button.ghost {
+    background: transparent; border: 1px solid rgba(255,215,0,0.2);
+    color: var(--gold1); font-weight: 600;
   }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  h1, h2 {
-    color: gold;
-    text-shadow: 0 0 10px rgba(255,215,0,0.3);
-  }
-
+  .hidden {display: none;}
   .notif {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
+    position: fixed; top: 15px; right: 15px;
     background: rgba(0,0,0,0.8);
-    border: 1px solid gold;
-    color: gold;
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(255,215,0,0.3);
-    display: none;
+    color: var(--gold1); padding: 12px 18px;
+    border-radius: 10px; border: 1px solid rgba(255,215,0,0.3);
+    box-shadow: 0 0 20px rgba(255,215,0,0.1);
+    opacity: 0; transform: translateY(-10px);
+    transition: all .3s ease;
+    z-index: 999;
   }
+  .notif.show {opacity: 1; transform: translateY(0);}
+  footer {text-align: center; margin-top: 15px; font-size: 13px; color: rgba(255,255,255,0.6);}
 </style>
 </head>
 <body>
 
-<!-- Halaman 1: Login -->
-<div id="loginPage" class="container active">
-  <h1>Login Dulu Pren</h1>
-  <input type="text" id="userInput" placeholder="Masukkan email / no HP">
-  <button onclick="kirimKode()">Kirim Kode Verifikasi</button>
+<div class="notif" id="notif"></div>
+
+<!-- Login -->
+<div class="wrap" id="loginPage">
+  <h1><i class="fa-solid fa-shield-halved"></i> Masuk</h1>
+  <p>Masukkan email atau nomor HP kamu untuk menerima kode verifikasi.</p>
+  <input type="text" id="userInput" placeholder="Email atau No HP">
+  <button id="sendBtn">Kirim Kode Verifikasi</button>
+  <footer>ZharVerify © 2025 — Tema Hitam & Emas</footer>
 </div>
 
-<!-- Halaman 2: Verifikasi -->
-<div id="verifyPage" class="container">
-  <h2>Verifikasi Dulu 🔐</h2>
-  <input type="number" id="kodeInput" placeholder="Masukkan kode verifikasi">
-  <button onclick="verifikasiKode()">Verifikasi</button>
+<!-- Verifikasi -->
+<div class="wrap hidden" id="verifyPage">
+  <h1><i class="fa-solid fa-key"></i> Verifikasi Kode</h1>
+  <p>Kami telah mengirimkan kode 6 digit ke browser kamu.</p>
+  <input type="text" id="otpInput" maxlength="6" placeholder="Masukkan Kode">
+  <button id="verifyBtn">Verifikasi</button>
+  <button class="ghost" id="resendBtn">Kirim Ulang</button>
+  <footer><button class="ghost" id="backBtn">Kembali</button></footer>
 </div>
 
-<!-- Halaman 3: Utama -->
-<div id="mainPage" class="container">
-  <h1>🎉 Selamat Datang!</h1>
-  <p>Kamu berhasil login dengan verifikasi browser 😎</p>
-  <button onclick="logout()">Keluar</button>
+<!-- Halaman Utama -->
+<div class="wrap hidden" id="mainPage" style="text-align:center">
+  <h1><i class="fa-solid fa-crown"></i> ZharVerify</h1>
+  <p>Selamat datang, <span id="userDisplay" style="color:var(--gold1)"></span> 👑</p>
+  <p>Kamu berhasil login menggunakan sistem verifikasi browser.</p>
+  <button id="logoutBtn">Keluar</button>
 </div>
-
-<div class="notif" id="notifBox"></div>
 
 <script>
-let kodeAsli = null;
+(function(){
+  const notif = document.getElementById("notif");
+  const loginPage = document.getElementById("loginPage");
+  const verifyPage = document.getElementById("verifyPage");
+  const mainPage = document.getElementById("mainPage");
+  const sendBtn = document.getElementById("sendBtn");
+  const verifyBtn = document.getElementById("verifyBtn");
+  const resendBtn = document.getElementById("resendBtn");
+  const backBtn = document.getElementById("backBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const userInput = document.getElementById("userInput");
+  const otpInput = document.getElementById("otpInput");
+  const userDisplay = document.getElementById("userDisplay");
 
-function showNotif(pesan) {
-  const box = document.getElementById('notifBox');
-  box.innerText = pesan;
-  box.style.display = 'block';
-  setTimeout(() => box.style.display = 'none', 4000);
-}
+  let currentOTP = "";
+  let currentUser = "";
 
-async function kirimKode() {
-  const user = document.getElementById('userInput').value.trim();
-  if (user === "") {
-    showNotif("Isi dulu email atau nomor kamu, pren!");
-    return;
+  function showNotif(msg, duration=4000){
+    notif.innerText = msg;
+    notif.classList.add("show");
+    setTimeout(()=> notif.classList.remove("show"), duration);
   }
 
-  kodeAsli = Math.floor(100000 + Math.random() * 900000);
-  showNotif("Kode verifikasi dikirim via notifikasi!");
+  function sendOTP(){
+    currentOTP = String(Math.floor(100000 + Math.random() * 900000));
+    const message = `👑 zharVerify: kode login kamu adalah ${currentOTP} — jangan kasih ke siapapun!`;
 
-  // Coba kirim notifikasi browser
-  if (Notification.permission === "granted") {
-    new Notification("Kode Verifikasi", { body: "Kode kamu: " + kodeAsli });
-  } else if (Notification.permission !== "denied") {
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      new Notification("Kode Verifikasi", { body: "Kode kamu: " + kodeAsli });
+    // Coba tampilkan notifikasi browser (jika diizinkan)
+    if (Notification && Notification.permission === "granted") {
+      new Notification("zharVerify", { body: message, icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png" });
+    } else if (Notification && Notification.permission !== "denied") {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          new Notification("zharVerify", { body: message, icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png" });
+        } else {
+          showNotif(message);
+        }
+      });
     } else {
-      alert("Izin notifikasi ditolak. Kode: " + kodeAsli);
+      showNotif(message);
     }
-  } else {
-    alert("Aktifin izin notifikasi dulu, pren!");
+
+    console.log("Kode OTP:", currentOTP); // buat debug
   }
 
-  document.getElementById('loginPage').classList.remove('active');
-  document.getElementById('verifyPage').classList.add('active');
-}
+  sendBtn.addEventListener("click", () => {
+    const val = userInput.value.trim();
+    if (!val) return alert("Masukkan email atau nomor HP dulu ya!");
+    currentUser = val;
+    loginPage.classList.add("hidden");
+    verifyPage.classList.remove("hidden");
+    sendOTP();
+  });
 
-function verifikasiKode() {
-  const kodeInput = document.getElementById('kodeInput').value;
-  if (parseInt(kodeInput) === kodeAsli) {
-    showNotif("Verifikasi berhasil!");
-    document.getElementById('verifyPage').classList.remove('active');
-    document.getElementById('mainPage').classList.add('active');
-  } else {
-    showNotif("Kode salah pren, coba lagi!");
-  }
-}
+  verifyBtn.addEventListener("click", () => {
+    if (otpInput.value.trim() === currentOTP) {
+      verifyPage.classList.add("hidden");
+      mainPage.classList.remove("hidden");
+      userDisplay.innerText = currentUser;
+      showNotif("✅ Verifikasi berhasil! Selamat datang 👑");
+    } else {
+      alert("Kode salah, coba lagi!");
+    }
+  });
 
-function logout() {
-  kodeAsli = null;
-  document.getElementById('mainPage').classList.remove('active');
-  document.getElementById('loginPage').classList.add('active');
-  showNotif("Kamu udah keluar.");
-}
+  resendBtn.addEventListener("click", () => {
+    sendOTP();
+    showNotif("Kode baru dikirim 🔁");
+  });
+
+  backBtn.addEventListener("click", () => {
+    verifyPage.classList.add("hidden");
+    loginPage.classList.remove("hidden");
+    otpInput.value = "";
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    mainPage.classList.add("hidden");
+    loginPage.classList.remove("hidden");
+    otpInput.value = ""; userInput.value = "";
+    showNotif("Kamu telah keluar 👋");
+  });
+})();
 </script>
-
 </body>
 </html>
