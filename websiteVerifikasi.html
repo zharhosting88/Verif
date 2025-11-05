@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Login OTP - Hitam Emas (EmailJS)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root{
+    --gold1:#ffd700;
+    --gold2:#b8860b;
+    --bg1:#000000;
+    --card: rgba(255,215,0,0.06);
+  }
+  *{box-sizing:border-box;font-family:Inter, Poppins, system-ui, sans-serif}
+  body{
+    min-height:100vh;
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(135deg, #000000 0%, #1a1200 50%, #4b3600 100%);
+    color:#fff;
+  }
+  .wrap{
+    width:94%;
+    max-width:420px;
+    border-radius:16px;
+    padding:28px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,215,0,0.12);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 30px rgba(184,134,11,0.06);
+    position:relative;
+  }
+  h1{color:var(--gold1);font-size:20px;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+  p.lead{color:rgba(255,215,0,0.9);margin:10px 0 18px;font-size:14px}
+  input[type="text"], input[type="tel"], input[type="email"], input[type="number"]{
+    width:100%;padding:12px 14px;border-radius:10px;border:none;background:rgba(255,255,255,0.04);color:#fff;font-size:15px;margin-bottom:12px;outline:none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+  .row{display:flex;gap:10px}
+  button{
+    width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--gold1),var(--gold2));color:#000;font-weight:700;cursor:pointer;
+    box-shadow: 0 6px 18px rgba(184,134,11,0.14);
+  }
+  button.ghost{background:transparent;border:1px solid rgba(255,215,0,0.12);color:var(--gold1);font-weight:600}
+  .hidden{display:none}
+  .center{text-align:center}
+  .small{font-size:13px;color:rgba(255,255,255,0.75)}
+  .notif{
+    position:fixed;right:20px;top:20px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.12);padding:10px 14px;border-radius:10px;color:var(--gold1);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    opacity:0;transform:translateY(-6px);transition:all .35s;
+  }
+  .notif.show{opacity:1;transform:translateY(0)}
+  .otp-box{display:flex;gap:8px;justify-content:center;margin-top:8px}
+  .otp-box input{width:48px;text-align:center;font-size:18px;padding:10px}
+  .meta{margin-top:14px;color:rgba(255,255,255,0.65);font-size:13px}
+  footer{margin-top:18px;text-align:center;color:rgba(255,255,255,0.55);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="notif" id="notif"></div>
+
+<div class="wrap" id="loginPage">
+  <h1><i class="fa-solid fa-shield-halved"></i> Masuk — Email / No HP</h1>
+  <p class="lead">Masukkan Email atau nomor HP. Kami akan mengirimkan <b>kode verifikasi (OTP)</b> ke Email yang kamu masukkan.</p>
+
+  <input type="text" id="userInput" placeholder="Contoh: nama@mail.com atau 0812xxxxxxx" autocomplete="username">
+
+  <div class="row" style="margin-top:6px">
+    <button id="sendBtn">Kirim Kode Verifikasi</button>
+  </div>
+
+  <p class="meta">Tanpa password. Hanya verifikasi via email (EmailJS).</p>
+  <footer>Tema: Hitam · Emas — Elegan</footer>
+</div>
+
+<div class="wrap hidden" id="verifyPage">
+  <h1><i class="fa-solid fa-key"></i> Masukkan Kode (OTP)</h1>
+  <p class="lead">Kami telah mengirim kode 6-digit ke: <span id="toEmail" style="color:var(--gold1)"></span></p>
+
+  <!-- single input -->
+  <input type="text" id="otpInput" placeholder="Masukkan kode verifikasi" maxlength="6" inputmode="numeric">
+
+  <div class="row" style="margin-top:8px">
+    <button id="verifyBtn">Verifikasi</button>
+    <button class="ghost" id="resendBtn">Kirim Ulang</button>
+  </div>
+
+  <p class="small">Kode akan kadaluarsa dalam <span id="countdown">02:00</span></p>
+  <p id="debugSent" class="small" style="color:var(--gold1)"></p>
+
+  <footer><button class="ghost" id="backToLogin">Kembali</button></footer>
+</div>
+
+<div class="wrap hidden center" id="mainPage">
+  <h1><i class="fa-solid fa-crown"></i> Halaman Utama</h1>
+  <p class="lead">Selamat datang, <span id="userDisplay" style="color:var(--gold1)"></span> 👑</p>
+  <p class="small">Kamu berhasil login menggunakan OTP yang dikirim ke email.</p>
+  <div style="margin-top:18px">
+    <button id="logoutBtn">Keluar</button>
+  </div>
+</div>
+
+<!-- EmailJS SDK -->
+<script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+<script>
+  (function(){
+    // === KONFIGURASI EMAILJS ===
+    const SERVICE_ID = "service_a21xwog";           // dari dashboard EmailJS (yang ente temuin)
+    const TEMPLATE_ID = "template_f9oedpi";        // yang ente kirim tadi
+    const PUBLIC_KEY = "hF9qVfVa1XCMmt6kT";        // kunci publik (ada di dashboard akun ente)
+
+    // Inisialisasi EmailJS
+    if (window.emailjs) {
+      emailjs.init(PUBLIC_KEY);
+    } else {
+      console.warn("EmailJS SDK tidak termuat.");
+    }
+
+    // Elemen
+    const loginPage = document.getElementById("loginPage");
+    const verifyPage = document.getElementById("verifyPage");
+    const mainPage = document.getElementById("mainPage");
+    const notif = document.getElementById("notif");
+
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    const toEmailSpan = document.getElementById("toEmail");
+    const otpInput = document.getElementById("otpInput");
+    const verifyBtn = document.getElementById("verifyBtn");
+    const resendBtn = document.getElementById("resendBtn");
+    const backToLogin = document.getElementById("backToLogin");
+    const debugSent = document.getElementById("debugSent");
+    const countdownEl = document.getElementById("countdown");
+
+    const userDisplay = document.getElementById("userDisplay");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    // State
+    let currentOTP = "";
+    let currentRecipient = "";
+    let otpExpiry = null;
+    let countdownTimer = null;
+
+    // Helper
+    function showNotif(text, time=2500){
+      notif.innerText = text;
+      notif.classList.add("show");
+      setTimeout(()=> notif.classList.remove("show"), time);
+    }
+
+    function generateOTP(){
+      return ("" + Math.floor(100000 + Math.random()*900000));
+    }
+
+    function startCountdown(seconds = 120){
+      clearInterval(countdownTimer);
+      let t = seconds;
+      function fmt(s){
+        const m = Math.floor(s/60).toString().padStart(2,'0');
+        const sec = (s%60).toString().padStart(2,'0');
+        return `${m}:${sec}`;
+      }
+      countdownEl.innerText = fmt(t);
+      countdownTimer = setInterval(()=>{
+        t--;
+        if (t < 0) {
+          clearInterval(countdownTimer);
+          countdownEl.innerText = "00:00";
+          showNotif("Kode kadaluarsa. Silakan kirim ulang.");
+          currentOTP = "";
+        } else {
+          countdownEl.innerText = fmt(t);
+        }
+      }, 1000);
+    }
+
+    // Kirim OTP via EmailJS
+    async function sendOTP(recipient){
+      if (!window.emailjs) {
+        alert("EmailJS SDK belum dimuat. Cek koneksi internet.");
+        return false;
+      }
+
+      currentOTP = generateOTP();
+      otpExpiry = Date.now() + 2*60*1000; // 2 menit
+      startCountdown(120);
+
+      // Template params -- pastikan template EmailJS ente memakai variabel {{otp}} dan/atau {{to_name}} / {{to_email}}
+      const templateParams = {
+        to_name: recipient.split('@')[0] || recipient,
+        to_email: recipient,
+        otp: currentOTP,
+        kode: currentOTP  // beberapa template pake nama variable berbeda, kirim juga 'kode'
+      };
+
+      try {
+        showNotif("Mengirim kode...");
+        const res = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+        // res.status biasanya 200 kalau sukses
+        showNotif("Kode terkirim! Cek inbox atau spam.");
+        debugSent.innerText = "Kode terkirim (dicek di email).";
+        return true;
+      } catch (err) {
+        console.error("Gagal kirim EmailJS:", err);
+        alert("Gagal mengirim email. Cek konfigurasi EmailJS & koneksi. Pesan: " + (err && err.text ? err.text : err.message || err));
+        return false;
+      }
+    }
+
+    // Event: Kirim kode
+    sendBtn.addEventListener("click", async ()=>{
+      const val = userInput.value.trim();
+      if (!val) { alert("Isi dulu email atau nomor HP (email direkomendasikan)."); return; }
+
+      // Basic check: kalau ada @ anggap email, kalau angka anggap phone (tapi EmailJS butuh email)
+      if (!val.includes("@")) {
+        // Kalau user masukkan nomor HP, kita minta konfirmasi & minta email juga
+        const ask = prompt("Kamu memasukkan nomor HP. Untuk mengirim OTP via EmailJS dibutuhkan alamat email. Masukkan email sekarang (atau ketik 'batal'):");
+        if (!ask || ask.toLowerCase() === "batal") return;
+        if (!ask.includes("@")) { alert("Format email tidak valid."); return; }
+        currentRecipient = ask.trim();
+      } else {
+        currentRecipient = val;
+      }
+
+      // Tampilkan halaman verifikasi
+      toEmailSpan.innerText = currentRecipient;
+      loginPage.classList.add("hidden");
+      verifyPage.classList.remove("hidden");
+      otpInput.value = "";
+
+      // Kirim via EmailJS
+      const ok = await sendOTP(currentRecipient);
+      if (!ok) {
+        // balik ke login kalau gagal
+        verifyPage.classList.add("hidden");
+        loginPage.classList.remove("hidden");
+      } else {
+        showNotif("Kode dikirim ke " + currentRecipient);
+      }
+    });
+
+    // Verifikasi
+    verifyBtn.addEventListener("click", ()=>{
+      const userCode = otpInput.value.trim();
+      if (!userCode) { alert("Masukkan kode OTP dulu."); return; }
+      if (!currentOTP) { alert("Tidak ada kode aktif. Silakan klik kirim ulang."); return; }
+      if (userCode === currentOTP) {
+        // sukses
+        verifyPage.classList.add("hidden");
+        mainPage.classList.remove("hidden");
+        userDisplay.innerText = currentRecipient;
+        showNotif("Login berhasil 🎉", 2200);
+        clearInterval(countdownTimer);
+      } else {
+        alert("Kode salah. Cek kembali email atau minta kirim ulang.");
+      }
+    });
+
+    // Resend
+    resendBtn.addEventListener("click", async ()=>{
+      if (!currentRecipient) { alert("Tidak ada penerima. Kembali ke halaman login."); return; }
+      const ok = await sendOTP(currentRecipient);
+      if (ok) showNotif("Kode baru dikirim.");
+    });
+
+    // Back to login
+    backToLogin.addEventListener("click", ()=>{
+      verifyPage.classList.add("hidden");
+      loginPage.classList.remove("hidden");
+      currentOTP = "";
+      otpInput.value = "";
+      debugSent.innerText = "";
+      clearInterval(countdownTimer);
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", ()=>{
+      mainPage.classList.add("hidden");
+      loginPage.classList.remove("hidden");
+      userInput.value = "";
+      otpInput.value = "";
+      currentOTP = "";
+      debugSent.innerText = "";
+      showNotif("Kamu telah keluar.");
+    });
+
+    // keyboard enter shortcuts
+    userInput.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendBtn.click(); });
+    otpInput.addEventListener("keydown", (e)=>{ if (e.key === "Enter") verifyBtn.click(); });
+
+  })();
+</script>
+</body>
+</html>
